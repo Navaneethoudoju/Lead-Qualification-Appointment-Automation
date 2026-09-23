@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+*.db
+escalations.log
+.env
+.git/
+.github/
+tests/
+*.md
+!README.md

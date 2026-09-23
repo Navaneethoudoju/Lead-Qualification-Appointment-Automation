@@ -1,0 +1,47 @@
+# Core web layer — required to run `uvicorn app.main:app`
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+
+# Optional: only needed if you want main.py to auto-load a .env file.
+# Without it, just export env vars directly (see .env.example).
+python-dotenv==1.0.1
+
+# Test-only: fastapi.testclient needs httpx. Once this is installed,
+# tests/test_api.py automatically uses the REAL FastAPI TestClient instead
+# of the offline stub in tests/_offline_fastapi_stub.py — no code changes
+# needed, see the import-fallback at the top of that file.
+httpx==0.27.2
+
+# Core engine dependencies (session 6) — the original in-sandbox stdlib-only
+# build has been replaced with the real stack described in PROGRESS.md:
+#   - database.py       -> PostgreSQL via psycopg2 (ThreadedConnectionPool)
+#   - state_store.py     -> Redis (RedisStateStore)
+#   - rate_limiter.py    -> Redis (RedisRateLimiter, sorted-set sliding window)
+#   - vector_store.py    -> ChromaDB, embedded via embeddings_client.py
+# These are no longer optional; the app will not start without them.
+psycopg2-binary==2.9.9
+redis==5.0.8
+chromadb==0.5.5
+
+# Local, free embeddings (session 7) — embeddings_client.py's default
+# backend: all-MiniLM-L6-v2 via sentence-transformers, no API key, no
+# per-call cost. Pulls in torch (CPU build is fine; ~500MB-1GB install).
+# First run downloads the ~80MB model from huggingface.co and caches it in
+# ~/.cache/huggingface — needs network once, then works fully offline.
+# If you'd rather not host the model locally (e.g. very small containers),
+# set OPENAI_API_KEY and AI_LEADFLOW_EMBEDDINGS_BACKEND=openai instead; see
+# embeddings_client.py. Without either, the app falls back to the offline
+# mock embedder so it still runs with zero external dependencies.
+sentence-transformers==3.1.1
+
+# Optional: only needed if you swap in a real Anthropic SDK call instead of
+# llm_client.py's stdlib urllib implementation.
+# anthropic==0.34.2
+
+# Google Calendar integration (session 7) — required only if
+# GOOGLE_CALENDAR_CREDENTIALS_JSON is set (see calendar_tool.py /
+# .env.example). Without it, the app stays in mock calendar mode and these
+# are not imported.
+google-api-python-client==2.147.0
+google-auth==2.35.0

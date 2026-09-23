@@ -1,0 +1,95 @@
+# AI LeadFlow — Docker Compose
+#
+# session 6: the backend now requires Postgres + Redis + a persistent Chroma
+# dir (see app/core/database.py, state_store.py, rate_limiter.py,
+# vector_store.py) — no more sqlite/in-memory fallback, so those two
+# services are real (not commented-out) dependencies of `backend` here.
+#
+# NOT built/run against a live Docker daemon in this project's build
+# sandbox (no Docker available there) — same "written to spec, run this
+# once yourself before trusting it in CI/CD" caveat as the Dockerfile.
+
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://ai_leadflow:ai_leadflow@postgres:5432/ai_leadflow}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - AI_LEADFLOW_CHROMA_DIR=/app/data/chroma
+      - AI_LEADFLOW_KB_DIR=/app/knowledge_base/clinic
+      - AI_LEADFLOW_CORS_ORIGINS=${AI_LEADFLOW_CORS_ORIGINS:-*}
+      - AI_LEADFLOW_ADMIN_USERNAME=${AI_LEADFLOW_ADMIN_USERNAME:-admin}
+      - AI_LEADFLOW_ADMIN_PASSWORD=${AI_LEADFLOW_ADMIN_PASSWORD:-admin}
+      - AI_LEADFLOW_RATE_LIMIT_MAX_REQUESTS=${AI_LEADFLOW_RATE_LIMIT_MAX_REQUESTS:-20}
+      - AI_LEADFLOW_RATE_LIMIT_WINDOW_SECONDS=${AI_LEADFLOW_RATE_LIMIT_WINDOW_SECONDS:-60}
+      - AI_LEADFLOW_LOG_LEVEL=${AI_LEADFLOW_LOG_LEVEL:-INFO}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - AIRTABLE_API_KEY=${AIRTABLE_API_KEY:-}
+      - AIRTABLE_BASE_ID=${AIRTABLE_BASE_ID:-}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
+    volumes:
+      - leadflow_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # Serves frontend/admin and frontend/widget as static files on :8080, so
+  # `docker compose up` alone gives you a clickable dashboard URL with no
+  # separate `python -m http.server` step. Same files, same zero-build-step
+  # vanilla JS — just containerized.
+  frontend:
+    image: python:3.11-slim
+    working_dir: /site
+    volumes:
+      - ./frontend:/site:ro
+    ports:
+      - "8080:8080"
+    command: ["python3", "-m", "http.server", "8080"]
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=ai_leadflow
+      - POSTGRES_USER=ai_leadflow
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ai_leadflow}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_leadflow -d ai_leadflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  leadflow_data:
+  postgres_data:
+  redis_data:

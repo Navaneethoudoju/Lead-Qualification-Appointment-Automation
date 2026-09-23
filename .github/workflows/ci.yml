@@ -1,0 +1,127 @@
+name: CI
+
+# Runs the full test suite on every push/PR.
+#
+# Session 7 fix: previously this had a "test-offline" job that installed
+# nothing beyond stdlib, on the theory that tests/_offline_fastapi_stub.py
+# makes the suite runnable with zero dependencies. That was true through
+# session 5 (sqlite + in-memory state/rate-limit stores). Since session 6,
+# app/core/database.py and state_store.py/rate_limiter.py import
+# psycopg2/redis unconditionally at module top level and open real
+# connections in Database.__init__ / RedisStateStore.__init__ — there is no
+# more "offline" mode, mock or otherwise, for the DB/state layer (the
+# fastapi-vs-stub distinction in tests/test_api.py is a separate, narrower
+# concern that's still real, but doesn't help here). Both jobs below now
+# start real Postgres + Redis service containers so `Database(...)` and
+# `RedisStateStore(...)` have something to actually connect to.
+#
+# - `test-stub` — fastapi/uvicorn/httpx are NOT installed, so
+#   tests/test_api.py runs through the offline stdlib stub client
+#   (tests/_offline_fastapi_stub.py) instead of fastapi.testclient. Still
+#   needs real Postgres/Redis, same as test-full.
+# - `test-full` — installs requirements.txt for real (including
+#   sentence-transformers + chromadb, so this job also exercises real
+#   MiniLM embeddings + Chroma, not just the DB/state layer) and re-runs the
+#   same test files, which switch to the real fastapi.testclient
+#   automatically (see the import-fallback at the top of tests/test_api.py).
+#
+# Both must pass. Neither job configures OPENAI_API_KEY, ANTHROPIC_API_KEY,
+# OLLAMA_BASE_URL, or GOOGLE_CALENDAR_CREDENTIALS_JSON — so LLM/embeddings-
+# backend selection in test-stub falls back to mock (no sentence-transformers
+# installed there either), while test-full exercises the real MiniLM +
+# Chroma path (both installed) with LLM still on mock (no API key / Ollama
+# configured in CI). Calendar and CRM stay in mock/postgres mode in both.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-stub:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ai_leadflow_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ai_leadflow_test
+      TEST_REDIS_URL: redis://localhost:6379/15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install only the psycopg2/redis client libs the DB/state layer needs
+        run: pip install psycopg2-binary==2.9.9 redis==5.0.8
+      - name: Run test suite (offline FastAPI stub, real Postgres/Redis)
+        run: python3 -m unittest discover -s tests -v
+
+  test-full:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ai_leadflow_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ai_leadflow_test
+      TEST_REDIS_URL: redis://localhost:6379/15
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ai_leadflow_test
+      REDIS_URL: redis://localhost:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run test suite (real FastAPI TestClient, real Postgres/Redis/Chroma/MiniLM)
+        run: python3 -m unittest discover -s tests -v
+      - name: Verify the app actually starts
+        run: |
+          uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          sleep 5
+          curl -f http://localhost:8000/health
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [test-stub, test-full]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build -t ai-leadflow:ci .

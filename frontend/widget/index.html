@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sunrise Family Clinic</title>
+<style>
+  :root {
+    --ink: #14161f; --muted: #6b7080; --brand: #4f46e5; --brand-dark: #4338ca;
+    --border: #e6e8f0; --paper: #f6f7fb;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--paper); color: var(--ink); -webkit-font-smoothing: antialiased;
+  }
+  .nav {
+    display: flex; align-items: center; justify-content: space-between; padding: 18px 6vw;
+    background: #fff; border-bottom: 1px solid var(--border);
+  }
+  .nav .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+  .nav .logo .mark {
+    width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #6a63f6, #4338ca);
+    display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px;
+  }
+  .nav .links { display: flex; gap: 26px; font-size: 13.5px; color: var(--muted); font-weight: 500; }
+
+  .hero {
+    max-width: 720px; margin: 0 auto; padding: 80px 24px 40px; text-align: center;
+  }
+  .hero .kicker {
+    display: inline-block; background: #eef0ff; color: var(--brand); font-size: 12px; font-weight: 650;
+    padding: 5px 13px; border-radius: 999px; margin-bottom: 18px;
+  }
+  .hero h1 { font-size: 34px; margin: 0 0 12px; letter-spacing: -0.02em; line-height: 1.15; }
+  .hero p { color: var(--muted); line-height: 1.6; font-size: 15.5px; max-width: 520px; margin: 0 auto; }
+  .hero code {
+    background: #eef0f5; padding: 2px 7px; border-radius: 5px; font-size: 13px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 900px; margin: 40px auto 0; padding: 0 24px; }
+  @media (max-width: 720px) { .cards { grid-template-columns: 1fr; } }
+  .card {
+    background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 20px;
+    box-shadow: 0 1px 2px rgba(20,22,31,0.03), 0 8px 20px -12px rgba(20,22,31,0.1);
+  }
+  .card .emoji { font-size: 22px; margin-bottom: 10px; display: block; }
+  .card h3 { font-size: 14.5px; margin: 0 0 6px; }
+  .card p { font-size: 13px; color: var(--muted); line-height: 1.55; margin: 0; }
+
+  .note {
+    max-width: 640px; margin: 36px auto 60px; padding: 14px 18px; background: #fffaf0; border: 1px solid #f4e2ad;
+    border-radius: 12px; font-size: 12.5px; color: #7a5a12; line-height: 1.6;
+  }
+
+  .cta-hint {
+    max-width: 640px; margin: 0 auto; text-align: center; font-size: 13px; color: var(--muted);
+  }
+  .cta-hint b { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="logo"><span class="mark">SF</span> Sunrise Family Clinic</div>
+  <div class="links"><span>Services</span><span>Doctors</span><span>Contact</span></div>
+</div>
+
+<div class="hero">
+  <span class="kicker">Powered by AI LeadFlow</span>
+  <h1>Ask us anything, any time.</h1>
+  <p>
+    This is a bare demo host page for the AI LeadFlow embeddable widget — just
+    enough markup to prove <code>widget.js</code> embeds and talks to the API
+    with a single <code>&lt;script&gt;</code> tag, zero build step. Click the
+    chat bubble in the bottom-right corner to try it.
+  </p>
+  <p class="cta-hint" style="margin-top:14px;">Try asking: <b>"What are your working hours?"</b> or <b>"I'd like to book an appointment"</b></p>
+</div>
+
+<div class="cards">
+  <div class="card">
+    <span class="emoji">💬</span>
+    <h3>Instant answers</h3>
+    <p>Grounded FAQ responses pulled from the clinic's own knowledge base — never invented.</p>
+  </div>
+  <div class="card">
+    <span class="emoji">📅</span>
+    <h3>Real bookings</h3>
+    <p>Checks live calendar availability and confirms appointments through a real tool call.</p>
+  </div>
+  <div class="card">
+    <span class="emoji">🧑‍⚕️</span>
+    <h3>Human handoff</h3>
+    <p>Escalates to staff automatically for anything ambiguous, sensitive, or out of scope.</p>
+  </div>
+</div>
+
+<div class="note">
+  The widget defaults to <code>http://localhost:8000</code>. Start the API
+  first: <code>uvicorn app.main:app --reload --port 8000</code> (see
+  PROGRESS.md for setup). If the API isn't running yet, the widget will open
+  but messages will fail to send.
+</div>
+
+<script src="widget.js" data-api-base="http://localhost:8000" data-brand="Sunrise Family Clinic"></script>
+</body>
+</html>

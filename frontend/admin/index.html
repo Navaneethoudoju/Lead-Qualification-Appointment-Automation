@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI LeadFlow — Admin</title>
+<style>
+  :root {
+    --ink: #14161f;
+    --paper: #f6f7fb;
+    --surface: #ffffff;
+    --border: #e6e8f0;
+    --muted: #767c8c;
+    --brand: #4f46e5;
+    --brand-dark: #3f37c9;
+    --brand-soft: #eef0ff;
+    --accent: #0ea5a4;
+    --success: #17925a;
+    --success-soft: #e8f8ef;
+    --warning: #b5760a;
+    --warning-soft: #fdf3e0;
+    --danger: #d13b3b;
+    --danger-soft: #fdecec;
+    --sidebar: #171a26;
+    --sidebar-hi: #23273a;
+    --sidebar-text: #b7bbcc;
+    --radius: 12px;
+    --shadow: 0 1px 2px rgba(20,22,31,0.04), 0 8px 24px -12px rgba(20,22,31,0.12);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  button { font-family: inherit; }
+
+  .app { display: flex; min-height: 100vh; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    width: 232px; flex-shrink: 0; background: var(--sidebar); color: var(--sidebar-text);
+    display: flex; flex-direction: column; padding: 20px 14px; position: sticky; top: 0; height: 100vh;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 22px; }
+  .brand-mark {
+    width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
+    background: linear-gradient(135deg, #6a63f6, #4338ca);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 15px; color: #fff;
+  }
+  .brand-name { color: #fff; font-weight: 650; font-size: 14.5px; line-height: 1.2; }
+  .brand-tag { font-size: 11px; color: #8a90a8; margin-top: 1px; }
+
+  nav.navlist { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+  .navlink {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px;
+    font-size: 13.5px; font-weight: 500; cursor: pointer; border: none; background: none;
+    color: var(--sidebar-text); text-align: left; width: 100%;
+  }
+  .navlink:hover { background: var(--sidebar-hi); color: #fff; }
+  .navlink.active { background: var(--brand); color: #fff; }
+  .navlink .icon { width: 16px; text-align: center; opacity: 0.9; font-size: 14px; }
+  .navlink .count {
+    margin-left: auto; font-size: 11px; background: rgba(255,255,255,0.12); padding: 1px 7px;
+    border-radius: 999px; color: #dfe1ee;
+  }
+  .navlink.active .count { background: rgba(255,255,255,0.22); color: #fff; }
+
+  .sidebar-spacer { flex: 1; }
+
+  .conn-card {
+    background: var(--sidebar-hi); border-radius: 10px; padding: 12px; font-size: 12px;
+  }
+  .conn-card .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 6px; background: #8a90a8; }
+  .conn-card .dot.ok { background: #37d399; }
+  .conn-card .dot.err { background: #f16a6a; }
+  .conn-card .label { color: #9aa0b6; }
+  .conn-card .val { color: #fff; font-weight: 600; word-break: break-all; }
+  .conn-card button {
+    margin-top: 10px; width: 100%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
+    color: #fff; border-radius: 7px; padding: 7px 0; font-size: 12px; cursor: pointer; font-weight: 500;
+  }
+  .conn-card button:hover { background: rgba(255,255,255,0.16); }
+
+  /* ---------- Main ---------- */
+  main { flex: 1; min-width: 0; }
+  .topbar {
+    display: flex; align-items: center; gap: 14px; padding: 18px 28px; background: var(--surface);
+    border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 5;
+  }
+  .topbar h1 { font-size: 18px; margin: 0; font-weight: 650; }
+  .topbar .subtitle { font-size: 12.5px; color: var(--muted); margin-top: 2px; font-weight: 400; }
+  .topbar-spacer { flex: 1; }
+  .search-box {
+    display: flex; align-items: center; gap: 7px; background: var(--paper); border: 1px solid var(--border);
+    border-radius: 9px; padding: 7px 12px; width: 220px;
+  }
+  .search-box input { border: none; background: none; outline: none; font-size: 13px; width: 100%; color: var(--ink); }
+  .search-box .icon { color: var(--muted); font-size: 13px; }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface);
+    cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; color: var(--muted);
+  }
+  .icon-btn:hover { background: var(--paper); color: var(--ink); }
+
+  .content { padding: 24px 28px 60px; max-width: 1240px; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ---------- Stat cards ---------- */
+  .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 24px; }
+  @media (max-width: 1080px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 18px; box-shadow: var(--shadow);
+  }
+  .stat-card .top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .stat-card .icon-chip {
+    width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .stat-card .num { font-size: 25px; font-weight: 700; letter-spacing: -0.02em; }
+  .stat-card .label { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+  .chip-indigo { background: var(--brand-soft); color: var(--brand); }
+  .chip-teal { background: #e6fbfa; color: var(--accent); }
+  .chip-amber { background: var(--warning-soft); color: var(--warning); }
+  .chip-green { background: var(--success-soft); color: var(--success); }
+  .chip-red { background: var(--danger-soft); color: var(--danger); }
+
+  /* ---------- Panels / tables ---------- */
+  .panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); margin-bottom: 22px; overflow: hidden;
+  }
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between; padding: 15px 18px;
+    border-bottom: 1px solid var(--border); gap: 10px; flex-wrap: wrap;
+  }
+  .panel-head h2 { font-size: 14.5px; margin: 0; font-weight: 650; }
+  .panel-head .sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .panel-actions { display: flex; align-items: center; gap: 8px; }
+  .pill-btn {
+    background: var(--paper); border: 1px solid var(--border); border-radius: 7px; padding: 6px 11px;
+    font-size: 12px; cursor: pointer; color: var(--ink); font-weight: 500;
+  }
+  .pill-btn:hover { background: #eef0f5; }
+  .pill-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pill-btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .pill-btn.primary:hover { background: var(--brand-dark); }
+  .page-info { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td {
+    text-align: left; padding: 11px 18px; border-bottom: 1px solid var(--border);
+    white-space: nowrap; max-width: 240px; overflow: hidden; text-overflow: ellipsis;
+  }
+  th { color: var(--muted); font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; background: #fbfbfe; }
+  tbody tr { cursor: pointer; transition: background 0.1s; }
+  tbody tr:hover { background: #f7f8ff; }
+  tbody tr:last-child td { border-bottom: none; }
+  .empty-row td { color: var(--muted); cursor: default; text-align: center; padding: 40px 20px; }
+  .empty-row .big { font-size: 26px; display: block; margin-bottom: 8px; opacity: 0.5; }
+
+  .avatar-name { display: flex; align-items: center; gap: 9px; }
+  .mini-avatar {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--brand-soft); color: var(--brand);
+    display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0;
+  }
+
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 650;
+  }
+  .badge.active { background: var(--brand-soft); color: var(--brand); }
+  .badge.qualified { background: var(--warning-soft); color: var(--warning); }
+  .badge.booked { background: var(--success-soft); color: var(--success); }
+  .badge.escalated { background: var(--danger-soft); color: var(--danger); }
+  .badge.closed { background: #eef0f2; color: var(--muted); }
+  .badge.synced { background: var(--success-soft); color: var(--success); }
+  .badge.notsynced { background: #eef0f2; color: var(--muted); }
+  .badge.confirmed { background: var(--success-soft); color: var(--success); }
+  .badge.pending { background: var(--warning-soft); color: var(--warning); }
+  .badge.cancelled { background: #eef0f2; color: var(--muted); }
+
+  /* ---------- Add-lead form ---------- */
+  form.inline-form {
+    display: grid; grid-template-columns: repeat(5, 1fr) auto; gap: 9px; padding: 14px 18px;
+    border-top: 1px solid var(--border); background: #fbfbfe;
+  }
+  @media (max-width: 900px) { form.inline-form { grid-template-columns: repeat(2, 1fr); } }
+  form.inline-form input {
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-size: 12.5px; outline: none;
+    background: var(--surface);
+  }
+  form.inline-form input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+  form.inline-form button {
+    background: var(--brand); color: #fff; border: none; border-radius: 7px; padding: 8px 14px;
+    font-size: 12.5px; cursor: pointer; font-weight: 600; white-space: nowrap;
+  }
+  form.inline-form button:hover { background: var(--brand-dark); }
+
+  /* ---------- Drawer (lead detail / edit) ---------- */
+  .drawer-backdrop {
+    display: none; position: fixed; inset: 0; background: rgba(15,16,24,0.4); z-index: 1000;
+  }
+  .drawer-backdrop.open { display: block; }
+  .drawer {
+    position: fixed; top: 0; right: 0; height: 100%; width: 420px; max-width: calc(100vw - 32px);
+    background: var(--surface); box-shadow: -12px 0 40px rgba(0,0,0,0.16);
+    transform: translateX(100%); transition: transform 0.22s ease; display: flex; flex-direction: column; z-index: 1001;
+  }
+  .drawer-backdrop.open .drawer { transform: translateX(0); }
+  .drawer-head { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .drawer-head h3 { margin: 0; font-size: 15px; }
+  .drawer-head button { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted); line-height: 1; }
+  .drawer-body { padding: 18px 20px; overflow-y: auto; flex: 1; }
+  .field-label { font-size: 11.5px; font-weight: 650; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; margin: 14px 0 5px; }
+  .field-label:first-child { margin-top: 0; }
+  .field-input {
+    width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; font-size: 13.5px; outline: none;
+  }
+  .field-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+  .drawer-foot { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+  .drawer-foot .pill-btn { flex: 1; text-align: center; padding: 10px; }
+  .conv-id-note { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+
+  /* ---------- Modal (conversation transcript) ---------- */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0; background: rgba(15,16,24,0.45);
+    align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: 14px; width: 580px; max-width: 100%;
+    max-height: calc(100vh - 60px); display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+  }
+  .modal-head { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-head h3 { margin: 0; font-size: 14.5px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .modal-head button { background: none; border: none; font-size: 19px; cursor: pointer; color: var(--muted); }
+  .modal-body { padding: 16px 20px; overflow-y: auto; background: var(--paper); }
+  .msg { margin: 9px 0; padding: 9px 13px; border-radius: 12px; font-size: 13px; line-height: 1.45; max-width: 82%; white-space: pre-wrap; }
+  .msg.user { margin-left: auto; background: var(--brand); color: #fff; border-bottom-right-radius: 3px; }
+  .msg.assistant, .msg.bot { margin-right: auto; background: var(--surface); border: 1px solid var(--border); border-bottom-left-radius: 3px; }
+  .msg .ts { display: block; font-size: 10px; opacity: 0.6; margin-top: 5px; }
+  .loading, .muted { color: var(--muted); font-size: 13px; padding: 4px 0; }
+
+  /* ---------- Settings popover ---------- */
+  .settings-backdrop {
+    display: none; position: fixed; inset: 0; z-index: 1000;
+  }
+  .settings-backdrop.open { display: block; }
+  .settings-pop {
+    position: absolute; top: 62px; right: 28px; width: 300px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.18); padding: 16px;
+  }
+  .settings-pop h4 { margin: 0 0 12px; font-size: 13px; }
+  .settings-pop label { font-size: 11.5px; color: var(--muted); font-weight: 600; display: block; margin: 10px 0 4px; }
+  .settings-pop label:first-of-type { margin-top: 0; }
+  .settings-pop input {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-size: 12.5px; outline: none;
+  }
+  .settings-pop input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+  .settings-pop button {
+    margin-top: 14px; width: 100%; background: var(--brand); color: #fff; border: none; border-radius: 7px;
+    padding: 9px 0; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .settings-pop button:hover { background: var(--brand-dark); }
+
+  /* ---------- Toasts ---------- */
+  #toast-stack { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 2000; }
+  .toast {
+    background: var(--ink); color: #fff; padding: 11px 16px; border-radius: 9px; font-size: 12.5px;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.25); display: flex; align-items: center; gap: 8px;
+    animation: toast-in 0.18s ease; max-width: 320px;
+  }
+  .toast.error { background: #7a2323; }
+  .toast.ok .dot { color: #37d399; }
+  @keyframes toast-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .skeleton { animation: pulse 1.2s ease-in-out infinite; background: #eef0f5; border-radius: 6px; height: 12px; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">AL</div>
+      <div>
+        <div class="brand-name">AI LeadFlow</div>
+        <div class="brand-tag">Admin console</div>
+      </div>
+    </div>
+
+    <nav class="navlist">
+      <button class="navlink active" data-view="overview"><span class="icon">&#9673;</span> Overview</button>
+      <button class="navlink" data-view="leads"><span class="icon">&#9737;</span> Leads <span class="count" id="nav-count-leads">–</span></button>
+      <button class="navlink" data-view="conversations"><span class="icon">&#9993;</span> Conversations <span class="count" id="nav-count-conversations">–</span></button>
+      <button class="navlink" data-view="appointments"><span class="icon">&#128197;</span> Appointments <span class="count" id="nav-count-appointments">–</span></button>
+    </nav>
+
+    <div class="sidebar-spacer"></div>
+
+    <div class="conn-card">
+      <div><span class="dot" id="conn-dot"></span><span class="label">Status</span></div>
+      <div class="val" id="conn-status-text" style="margin-top:3px;">Connecting…</div>
+      <button id="open-settings">Connection settings</button>
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div>
+        <h1 id="topbar-title">Overview</h1>
+        <div class="subtitle" id="topbar-subtitle">A snapshot of every lead, conversation, and booking.</div>
+      </div>
+      <div class="topbar-spacer"></div>
+      <div class="search-box" id="search-wrap" style="display:none;">
+        <span class="icon">&#128269;</span>
+        <input id="search-input" type="text" placeholder="Search this table…" />
+      </div>
+      <button class="icon-btn" id="refresh-all" title="Refresh">&#8635;</button>
+    </div>
+
+    <div class="content">
+
+      <!-- ===== Overview ===== -->
+      <div class="view active" id="view-overview">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="top-row"><div class="icon-chip chip-indigo">&#9737;</div></div>
+            <div class="num" id="stat-leads">–</div>
+            <div class="label">Total leads</div>
+          </div>
+          <div class="stat-card">
+            <div class="top-row"><div class="icon-chip chip-teal">&#9993;</div></div>
+            <div class="num" id="stat-conversations">–</div>
+            <div class="label">Conversations</div>
+          </div>
+          <div class="stat-card">
+            <div class="top-row"><div class="icon-chip chip-red">&#9888;</div></div>
+            <div class="num" id="stat-escalated">–</div>
+            <div class="label">Escalated</div>
+          </div>
+          <div class="stat-card">
+            <div class="top-row"><div class="icon-chip chip-green">&#10003;</div></div>
+            <div class="num" id="stat-booked">–</div>
+            <div class="label">Booked</div>
+          </div>
+          <div class="stat-card">
+            <div class="top-row"><div class="icon-chip chip-amber">&#128197;</div></div>
+            <div class="num" id="stat-appointments">–</div>
+            <div class="label">Appointments</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Recent leads</h2>
+              <div class="sub">The five most recently captured leads, across every channel.</div>
+            </div>
+            <button class="pill-btn" data-goto="leads">View all &rarr;</button>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Name</th><th>Phone</th><th>Requirement</th><th>CRM</th></tr></thead>
+              <tbody id="overview-leads-tbody"><tr class="empty-row"><td colspan="4">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Recent conversations</h2>
+              <div class="sub">Latest activity across the widget and any connected channel.</div>
+            </div>
+            <button class="pill-btn" data-goto="conversations">View all &rarr;</button>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>ID</th><th>Channel</th><th>Status</th><th>Last updated</th></tr></thead>
+              <tbody id="overview-conversations-tbody"><tr class="empty-row"><td colspan="4">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Leads ===== -->
+      <div class="view" id="view-leads">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Leads</h2>
+              <div class="sub">Click a row to view or edit. CRM sync status shown per lead.</div>
+            </div>
+            <div class="panel-actions">
+              <button class="pill-btn" id="leads-prev">&larr; Prev</button>
+              <span class="page-info" id="leads-page-info">–</span>
+              <button class="pill-btn" id="leads-next">Next &rarr;</button>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Name</th><th>Phone</th><th>Email</th><th>Requirement</th><th>Budget</th><th>CRM</th></tr>
+              </thead>
+              <tbody id="leads-tbody"><tr class="empty-row"><td colspan="6">Connecting…</td></tr></tbody>
+            </table>
+          </div>
+          <form class="inline-form" id="add-lead-form" title="Manually add a walk-in / offline lead">
+            <input name="conversation_id" placeholder="Conversation ID *" required />
+            <input name="name" placeholder="Name" />
+            <input name="phone" placeholder="Phone" />
+            <input name="email" placeholder="Email" />
+            <input name="requirement" placeholder="Requirement" />
+            <button type="submit">+ Add lead</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ===== Conversations ===== -->
+      <div class="view" id="view-conversations">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Conversations</h2>
+              <div class="sub">Every session the orchestrator has handled. Click a row for the full transcript.</div>
+            </div>
+            <div class="panel-actions">
+              <button class="pill-btn" id="conversations-prev">&larr; Prev</button>
+              <span class="page-info" id="conversations-page-info">–</span>
+              <button class="pill-btn" id="conversations-next">Next &rarr;</button>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>ID</th><th>Channel</th><th>Status</th><th>Started</th><th>Last updated</th></tr></thead>
+              <tbody id="conversations-tbody"><tr class="empty-row"><td colspan="5">Connecting…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Appointments ===== -->
+      <div class="view" id="view-appointments">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Appointments</h2>
+              <div class="sub">Booked, pending, and cancelled slots, joined with lead contact info.</div>
+            </div>
+            <div class="panel-actions">
+              <button class="pill-btn" id="appointments-prev">&larr; Prev</button>
+              <span class="page-info" id="appointments-page-info">–</span>
+              <button class="pill-btn" id="appointments-next">Next &rarr;</button>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Slot</th><th>Lead</th><th>Phone</th><th>Status</th><th>Conversation</th></tr></thead>
+              <tbody id="appointments-tbody"><tr class="empty-row"><td colspan="5">Connecting…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Settings popover -->
+<div class="settings-backdrop" id="settings-backdrop">
+  <div class="settings-pop">
+    <h4>Connection settings</h4>
+    <label for="api-base">API base URL</label>
+    <input id="api-base" type="text" value="http://localhost:8000" spellcheck="false" />
+    <label for="admin-username">Username</label>
+    <input id="admin-username" type="text" value="admin" spellcheck="false" />
+    <label for="admin-password">Password</label>
+    <input id="admin-password" type="password" value="admin" />
+    <button id="save-api-base">Connect</button>
+  </div>
+</div>
+
+<!-- Lead detail / edit drawer -->
+<div class="drawer-backdrop" id="drawer-backdrop">
+  <div class="drawer">
+    <div class="drawer-head">
+      <h3>Lead details</h3>
+      <button id="drawer-close">&times;</button>
+    </div>
+    <div class="drawer-body">
+      <div class="field-label">Name</div>
+      <input class="field-input" id="edit-name" />
+      <div class="field-label">Phone</div>
+      <input class="field-input" id="edit-phone" />
+      <div class="field-label">Email</div>
+      <input class="field-input" id="edit-email" />
+      <div class="field-label">Requirement</div>
+      <input class="field-input" id="edit-requirement" />
+      <div class="field-label">Budget</div>
+      <input class="field-input" id="edit-budget" />
+      <div class="conv-id-note" id="edit-conv-note"></div>
+    </div>
+    <div class="drawer-foot">
+      <button class="pill-btn" id="drawer-view-conversation">View conversation</button>
+      <button class="pill-btn primary" id="drawer-save">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Conversation transcript modal -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-title">conversation</h3>
+      <button id="modal-close">&times;</button>
+    </div>
+    <div class="modal-body" id="modal-body"><div class="loading">Loading…</div></div>
+  </div>
+</div>
+
+<div id="toast-stack"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  const API_BASE_KEY = "ai_leadflow_admin_api_base";
+  const ADMIN_USER_KEY = "ai_leadflow_admin_username";
+  const ADMIN_PASS_KEY = "ai_leadflow_admin_password";
+  const apiBaseInput = document.getElementById("api-base");
+  const adminUserInput = document.getElementById("admin-username");
+  const adminPassInput = document.getElementById("admin-password");
+  apiBaseInput.value = localStorage.getItem(API_BASE_KEY) || apiBaseInput.value;
+  adminUserInput.value = localStorage.getItem(ADMIN_USER_KEY) || adminUserInput.value;
+  adminPassInput.value = localStorage.getItem(ADMIN_PASS_KEY) || adminPassInput.value;
+
+  function apiBase() { return apiBaseInput.value.replace(/\/$/, ""); }
+  function authHeader() { return "Basic " + btoa(adminUserInput.value + ":" + adminPassInput.value); }
+
+  function esc(s) {
+    if (s === null || s === undefined) return "";
+    return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  }
+  function fmtTime(iso) {
+    if (!iso) return "–";
+    try { return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }); }
+    catch (e) { return iso; }
+  }
+  function initials(name) {
+    if (!name) return "?";
+    return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+  }
+
+  function toast(message, kind) {
+    const stack = document.getElementById("toast-stack");
+    const el = document.createElement("div");
+    el.className = "toast " + (kind || "ok");
+    el.textContent = message;
+    stack.appendChild(el);
+    setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .25s"; setTimeout(() => el.remove(), 260); }, 2600);
+  }
+
+  function apiFetch(path, opts) {
+    opts = opts || {};
+    return fetch(apiBase() + path, {
+      method: opts.method || "GET",
+      headers: { "Content-Type": "application/json", "Authorization": authHeader() },
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    }).then((resp) => resp.json().then((data) => {
+      if (!resp.ok) {
+        let detail = (data && data.detail) ? data.detail : resp.statusText;
+        if (resp.status === 401) detail = "Invalid admin credentials";
+        throw new Error(detail);
+      }
+      return data;
+    }));
+  }
+
+  // ---- View switching ----------------------------------------------------
+  const TITLES = {
+    overview: ["Overview", "A snapshot of every lead, conversation, and booking."],
+    leads: ["Leads", "Every lead captured by the assistant or added manually."],
+    conversations: ["Conversations", "Full session history across every channel."],
+    appointments: ["Appointments", "Booked, pending, and cancelled calendar slots."],
+  };
+  function showView(name) {
+    document.querySelectorAll(".navlink").forEach((n) => n.classList.toggle("active", n.dataset.view === name));
+    document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === "view-" + name));
+    document.getElementById("topbar-title").textContent = TITLES[name][0];
+    document.getElementById("topbar-subtitle").textContent = TITLES[name][1];
+    document.getElementById("search-wrap").style.display = (name === "overview") ? "none" : "flex";
+    document.getElementById("search-input").value = "";
+    filterState.term = "";
+    if (name === "leads") renderLeads(lastData.leads);
+    if (name === "conversations") renderConversations(lastData.conversations);
+    if (name === "appointments") renderAppointments(lastData.appointments);
+  }
+  document.querySelectorAll(".navlink").forEach((n) => n.addEventListener("click", () => showView(n.dataset.view)));
+  document.querySelectorAll("[data-goto]").forEach((n) => n.addEventListener("click", () => showView(n.dataset.goto)));
+
+  const filterState = { term: "" };
+  document.getElementById("search-input").addEventListener("input", (e) => {
+    filterState.term = e.target.value.trim().toLowerCase();
+    const active = document.querySelector(".view.active").id.replace("view-", "");
+    if (active === "leads") renderLeads(lastData.leads);
+    if (active === "conversations") renderConversations(lastData.conversations);
+    if (active === "appointments") renderAppointments(lastData.appointments);
+  });
+  function matches(term, ...fields) {
+    if (!term) return true;
+    return fields.some((f) => (f || "").toString().toLowerCase().includes(term));
+  }
+
+  // ---- Settings popover ---------------------------------------------------
+  const settingsBackdrop = document.getElementById("settings-backdrop");
+  document.getElementById("open-settings").addEventListener("click", () => settingsBackdrop.classList.add("open"));
+  settingsBackdrop.addEventListener("click", (e) => { if (e.target === settingsBackdrop) settingsBackdrop.classList.remove("open"); });
+  document.getElementById("save-api-base").addEventListener("click", () => {
+    localStorage.setItem(API_BASE_KEY, apiBaseInput.value);
+    localStorage.setItem(ADMIN_USER_KEY, adminUserInput.value);
+    localStorage.setItem(ADMIN_PASS_KEY, adminPassInput.value);
+    settingsBackdrop.classList.remove("open");
+    refreshAll();
+  });
+
+  function setConnStatus(ok, text) {
+    document.getElementById("conn-dot").className = "dot " + (ok ? "ok" : "err");
+    document.getElementById("conn-status-text").textContent = text;
+  }
+
+  // ---- Pagination ----------------------------------------------------
+  const PAGE_SIZE = 20;
+  const pageState = {
+    leads: { offset: 0, total: 0 },
+    conversations: { offset: 0, total: 0 },
+    appointments: { offset: 0, total: 0 },
+  };
+  const lastData = { leads: [], conversations: [], appointments: [] };
+
+  function updatePageControls(key) {
+    const state = pageState[key];
+    const shownFrom = state.total === 0 ? 0 : state.offset + 1;
+    const shownTo = Math.min(state.offset + PAGE_SIZE, state.total);
+    document.getElementById(key + "-page-info").textContent = shownFrom + "–" + shownTo + " of " + state.total;
+    document.getElementById(key + "-prev").disabled = state.offset <= 0;
+    document.getElementById(key + "-next").disabled = state.offset + PAGE_SIZE >= state.total;
+  }
+  ["leads", "conversations", "appointments"].forEach((key) => {
+    document.getElementById(key + "-prev").addEventListener("click", () => {
+      pageState[key].offset = Math.max(0, pageState[key].offset - PAGE_SIZE);
+      loaders[key]();
+    });
+    document.getElementById(key + "-next").addEventListener("click", () => {
+      pageState[key].offset += PAGE_SIZE;
+      loaders[key]();
+    });
+  });
+
+  // ---- Stats ----------------------------------------------------------
+  function loadStats() {
+    return apiFetch("/api/admin/stats").then((s) => {
+      document.getElementById("stat-leads").textContent = s.total_leads;
+      document.getElementById("stat-conversations").textContent = s.total_conversations;
+      document.getElementById("stat-escalated").textContent = s.escalated_conversations;
+      document.getElementById("stat-booked").textContent = s.booked_conversations;
+      document.getElementById("stat-appointments").textContent = s.active_appointments;
+      document.getElementById("nav-count-leads").textContent = s.total_leads;
+      document.getElementById("nav-count-conversations").textContent = s.total_conversations;
+      document.getElementById("nav-count-appointments").textContent = s.total_appointments;
+    });
+  }
+
+  // ---- Leads ------------------------------------------------------------
+  function statusBadge(status) {
+    const cls = ["active", "qualified", "booked", "escalated", "closed"].includes(status) ? status : "active";
+    return '<span class="badge ' + cls + '">' + esc(status) + "</span>";
+  }
+  function syncBadge(synced) {
+    return synced ? '<span class="badge synced">synced</span>' : '<span class="badge notsynced">not synced</span>';
+  }
+
+  function renderLeads(leads) {
+    const tbody = document.getElementById("leads-tbody");
+    const filtered = leads.filter((l) => matches(filterState.term, l.name, l.phone, l.email, l.requirement));
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6"><span class="big">&#9737;</span>' + (leads.length ? "No leads match your search." : "No leads yet — they’ll appear here as the assistant qualifies them.") + "</td></tr>";
+      return;
+    }
+    tbody.innerHTML = filtered.map((l) => (
+      "<tr data-lead-id=\"" + esc(l.id) + "\">" +
+      "<td><div class=\"avatar-name\"><span class=\"mini-avatar\">" + esc(initials(l.name)) + "</span>" + esc(l.name || "Unnamed lead") + "</div></td>" +
+      "<td>" + esc(l.phone || "—") + "</td>" +
+      "<td>" + esc(l.email || "—") + "</td>" +
+      "<td>" + esc(l.requirement || "—") + "</td>" +
+      "<td>" + esc(l.budget || "—") + "</td>" +
+      "<td>" + syncBadge(l.crm_synced) + "</td>" +
+      "</tr>"
+    )).join("");
+    tbody.querySelectorAll("tr[data-lead-id]").forEach((row) => {
+      row.addEventListener("click", () => openLeadDrawer(row.getAttribute("data-lead-id")));
+    });
+  }
+
+  function renderOverviewLeads(leads) {
+    const tbody = document.getElementById("overview-leads-tbody");
+    const top = leads.slice(0, 5);
+    if (!top.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No leads yet.</td></tr>'; return; }
+    tbody.innerHTML = top.map((l) => (
+      "<tr data-lead-id=\"" + esc(l.id) + "\">" +
+      "<td><div class=\"avatar-name\"><span class=\"mini-avatar\">" + esc(initials(l.name)) + "</span>" + esc(l.name || "Unnamed lead") + "</div></td>" +
+      "<td>" + esc(l.phone || "—") + "</td>" +
+      "<td>" + esc(l.requirement || "—") + "</td>" +
+      "<td>" + syncBadge(l.crm_synced) + "</td>" +
+      "</tr>"
+    )).join("");
+    tbody.querySelectorAll("tr[data-lead-id]").forEach((row) => {
+      row.addEventListener("click", () => { showView("leads"); openLeadDrawer(row.getAttribute("data-lead-id")); });
+    });
+  }
+
+  function loadLeads() {
+    const state = pageState.leads;
+    return apiFetch("/api/admin/leads?limit=" + PAGE_SIZE + "&offset=" + state.offset).then((data) => {
+      state.total = data.total;
+      updatePageControls("leads");
+      lastData.leads = data.items;
+      renderLeads(data.items);
+      renderOverviewLeads(data.items);
+    });
+  }
+
+  document.getElementById("add-lead-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const fd = new FormData(form);
+    const body = {};
+    fd.forEach((value, key) => { if (value) body[key] = value; });
+    if (!body.conversation_id) { toast("Conversation ID is required", "error"); return; }
+    apiFetch("/api/admin/leads", { method: "POST", body }).then(() => {
+      toast("Lead saved");
+      form.reset();
+      loadLeads();
+      loadStats();
+    }).catch((err) => toast("Could not save lead: " + err.message, "error"));
+  });
+
+  // ---- Lead drawer (view + edit) ------------------------------------------
+  const drawerBackdrop = document.getElementById("drawer-backdrop");
+  let activeLead = null;
+
+  function openLeadDrawer(leadId) {
+    apiFetch("/api/admin/leads/" + encodeURIComponent(leadId)).then((lead) => {
+      activeLead = lead;
+      document.getElementById("edit-name").value = lead.name || "";
+      document.getElementById("edit-phone").value = lead.phone || "";
+      document.getElementById("edit-email").value = lead.email || "";
+      document.getElementById("edit-requirement").value = lead.requirement || "";
+      document.getElementById("edit-budget").value = lead.budget || "";
+      document.getElementById("edit-conv-note").textContent = "Conversation: " + lead.conversation_id;
+      drawerBackdrop.classList.add("open");
+    }).catch((err) => toast("Could not load lead: " + err.message, "error"));
+  }
+  document.getElementById("drawer-close").addEventListener("click", () => drawerBackdrop.classList.remove("open"));
+  drawerBackdrop.addEventListener("click", (e) => { if (e.target === drawerBackdrop) drawerBackdrop.classList.remove("open"); });
+
+  document.getElementById("drawer-save").addEventListener("click", () => {
+    if (!activeLead) return;
+    const body = {
+      name: document.getElementById("edit-name").value,
+      phone: document.getElementById("edit-phone").value,
+      email: document.getElementById("edit-email").value,
+      requirement: document.getElementById("edit-requirement").value,
+      budget: document.getElementById("edit-budget").value,
+    };
+    apiFetch("/api/admin/leads/" + encodeURIComponent(activeLead.id), { method: "PATCH", body }).then(() => {
+      toast("Lead updated");
+      drawerBackdrop.classList.remove("open");
+      loadLeads();
+    }).catch((err) => toast("Could not update lead: " + err.message, "error"));
+  });
+  document.getElementById("drawer-view-conversation").addEventListener("click", () => {
+    if (activeLead) openConversation(activeLead.conversation_id);
+  });
+
+  // ---- Conversations ------------------------------------------------------
+  function renderConversations(conversations) {
+    const tbody = document.getElementById("conversations-tbody");
+    const filtered = conversations.filter((c) => matches(filterState.term, c.id, c.channel, c.status));
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5"><span class="big">&#9993;</span>' + (conversations.length ? "No conversations match your search." : "No conversations yet.") + "</td></tr>";
+      return;
+    }
+    tbody.innerHTML = filtered.map((c) => (
+      "<tr data-conversation-id=\"" + esc(c.id) + "\">" +
+      "<td>" + esc(c.id) + "</td>" +
+      "<td>" + esc(c.channel) + "</td>" +
+      "<td>" + statusBadge(c.status) + "</td>" +
+      "<td>" + fmtTime(c.started_at) + "</td>" +
+      "<td>" + fmtTime(c.updated_at) + "</td>" +
+      "</tr>"
+    )).join("");
+    tbody.querySelectorAll("tr[data-conversation-id]").forEach((row) => {
+      row.addEventListener("click", () => openConversation(row.getAttribute("data-conversation-id")));
+    });
+  }
+  function renderOverviewConversations(conversations) {
+    const tbody = document.getElementById("overview-conversations-tbody");
+    const top = conversations.slice(0, 5);
+    if (!top.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No conversations yet.</td></tr>'; return; }
+    tbody.innerHTML = top.map((c) => (
+      "<tr data-conversation-id=\"" + esc(c.id) + "\">" +
+      "<td>" + esc(c.id) + "</td><td>" + esc(c.channel) + "</td><td>" + statusBadge(c.status) + "</td><td>" + fmtTime(c.updated_at) + "</td>" +
+      "</tr>"
+    )).join("");
+    tbody.querySelectorAll("tr[data-conversation-id]").forEach((row) => {
+      row.addEventListener("click", () => openConversation(row.getAttribute("data-conversation-id")));
+    });
+  }
+  function loadConversations() {
+    const state = pageState.conversations;
+    return apiFetch("/api/admin/conversations?limit=" + PAGE_SIZE + "&offset=" + state.offset).then((data) => {
+      state.total = data.total;
+      updatePageControls("conversations");
+      lastData.conversations = data.items;
+      renderConversations(data.items);
+      renderOverviewConversations(data.items);
+    });
+  }
+
+  // ---- Appointments -------------------------------------------------------
+  function appointmentStatusBadge(status) {
+    const cls = ["pending", "confirmed", "cancelled"].includes(status) ? status : "pending";
+    return '<span class="badge ' + cls + '">' + esc(status) + "</span>";
+  }
+  function renderAppointments(appointments) {
+    const tbody = document.getElementById("appointments-tbody");
+    const filtered = appointments.filter((a) => matches(filterState.term, a.lead_name, a.lead_phone, a.status, a.conversation_id));
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5"><span class="big">&#128197;</span>' + (appointments.length ? "No appointments match your search." : "No appointments booked yet.") + "</td></tr>";
+      return;
+    }
+    tbody.innerHTML = filtered.map((a) => (
+      "<tr data-conversation-id=\"" + esc(a.conversation_id) + "\">" +
+      "<td>" + fmtTime(a.slot_datetime) + "</td>" +
+      "<td>" + esc(a.lead_name || "—") + "</td>" +
+      "<td>" + esc(a.lead_phone || "—") + "</td>" +
+      "<td>" + appointmentStatusBadge(a.status) + "</td>" +
+      "<td>" + esc(a.conversation_id) + "</td>" +
+      "</tr>"
+    )).join("");
+    tbody.querySelectorAll("tr[data-conversation-id]").forEach((row) => {
+      row.addEventListener("click", () => openConversation(row.getAttribute("data-conversation-id")));
+    });
+  }
+  function loadAppointments() {
+    const state = pageState.appointments;
+    return apiFetch("/api/admin/appointments?limit=" + PAGE_SIZE + "&offset=" + state.offset).then((data) => {
+      state.total = data.total;
+      updatePageControls("appointments");
+      lastData.appointments = data.items;
+      renderAppointments(data.items);
+    });
+  }
+
+  const loaders = { leads: loadLeads, conversations: loadConversations, appointments: loadAppointments };
+
+  // ---- Conversation transcript modal --------------------------------------
+  const modalBackdrop = document.getElementById("modal-backdrop");
+  const modalBody = document.getElementById("modal-body");
+  const modalTitle = document.getElementById("modal-title");
+
+  function openConversation(sessionId) {
+    if (!sessionId) return;
+    modalTitle.textContent = sessionId;
+    modalBody.innerHTML = '<div class="loading">Loading…</div>';
+    modalBackdrop.classList.add("open");
+    apiFetch("/api/conversations/" + encodeURIComponent(sessionId)).then((data) => {
+      if (!data.messages || !data.messages.length) {
+        modalBody.innerHTML = '<div class="muted">No messages recorded for this conversation.</div>';
+        return;
+      }
+      modalBody.innerHTML = data.messages.map((m) => {
+        const roleClass = m.role === "user" ? "user" : "assistant";
+        return '<div class="msg ' + roleClass + '">' + esc(m.content) + '<span class="ts">' + esc(m.role) + " · " + fmtTime(m.timestamp) + "</span></div>";
+      }).join("");
+    }).catch((err) => { modalBody.innerHTML = '<div class="muted">Could not load messages: ' + esc(err.message) + "</div>"; });
+  }
+  document.getElementById("modal-close").addEventListener("click", () => modalBackdrop.classList.remove("open"));
+  modalBackdrop.addEventListener("click", (e) => { if (e.target === modalBackdrop) modalBackdrop.classList.remove("open"); });
+
+  // ---- Wiring ---------------------------------------------------------
+  function refreshAll() {
+    setConnStatus(false, "Connecting…");
+    Promise.all([loadStats(), loadLeads(), loadConversations(), loadAppointments()])
+      .then(() => setConnStatus(true, apiBase().replace(/^https?:\/\//, "")))
+      .catch((err) => { setConnStatus(false, "Disconnected"); toast("Could not reach API — " + err.message, "error"); });
+  }
+  document.getElementById("refresh-all").addEventListener("click", refreshAll);
+
+  refreshAll();
+})();
+</script>
+</body>
+</html>
